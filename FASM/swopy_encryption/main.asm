@@ -67,6 +67,7 @@ main:
 	open filename, O_RDONLY
 	mov [fd], rax
 	read [fd], buf, BUF_SIZE
+	mov [bytes_read], rax
 	mov r8, buf
 	mov r9, BUF_SIZE
 .loop:
@@ -81,7 +82,11 @@ main:
 	close fd
 	open filename, O_WRONLY or O_TRUNC
 	mov [fd], rax
-	write [fd], buf, BUF_SIZE
+	write [fd], buf, [bytes_read]
+	write 1, file_content_msg, file_content_len
+	write 1, new_line, 1
+	write 1, buf, [bytes_read]
+	write 1, new_line, 2
 	close fd
 	write 1, done_msg, done_len
 	exit 0
@@ -100,18 +105,17 @@ main:
 
 swopy:
 	mov bl, al
-	mov cl, al
-	and bl, 01010101b
-	and cl, 10101010b
-	shl bl, 1
-	shr cl, 1
-	or  bl, cl
-	mov al, bl
+	and al, 01010101b
+	and bl, 10101010b
+	shl al, 1
+	shr bl, 1
+	or  al, bl
 	ret
 segment readable writeable
 filename:			rb FILENAME_SIZE
 fd:					rq 1
 buf:				rb BUF_SIZE
+bytes_read			rq 1
 error_open_msg:		db "ERROR : couldn't open", 10
 error_open_len		=  $ - error_open_msg
 error_write_msg:	db "ERROR : couldn't write", 10
@@ -120,5 +124,8 @@ error_read_msg:		db "ERROR : couldn't read", 10
 error_read_len		=  $ - error_read_msg
 file_dialoge_msg:	db "filename : "
 file_dialoge_len	=  $ - file_dialoge_msg
-done_msg			db "Done!", 10
+done_msg:			db "Done!", 10
 done_len			=  $ - done_msg
+file_content_msg:	db "File contents :", 10
+file_content_len	=  $ - file_content_msg
+new_line:			db 10, 10
